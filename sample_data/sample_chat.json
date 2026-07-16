@@ -1,0 +1,46 @@
+{
+  "chat_id": "chat_abc123def456",
+  "chat_date": "2026-01-15",
+  "turns": [
+    {
+      "turn_id": "turn_001",
+      "turn_rank": 1,
+      "question": "I placed an order last week and it still shows as processing. Can you help me check the status?",
+      "response": "I'd be happy to help you check on your order status. Could you please provide your order number so I can look into this for you?",
+      "question_raw": "I placed an order last week and it still shows as processing. Can you help me check the status?",
+      "response_raw": "I'd be happy to help you check on your order status. Could you please provide your order number so I can look into this for you?"
+    },
+    {
+      "turn_id": "turn_002",
+      "turn_rank": 2,
+      "question": "Sure, it's 111-2345678-9012345",
+      "response": "Thank you. I can see your order is currently in the fulfillment stage. It should ship within the next 24 hours, and you'll receive a tracking notification via email once it does.",
+      "question_raw": "Sure, it's 111-2345678-9012345",
+      "response_raw": "Thank you. I can see your order is currently in the fulfillment stage. It should ship within the next 24 hours, and you'll receive a tracking notification via email once it does."
+    },
+    {
+      "turn_id": "turn_003",
+      "turn_rank": 3,
+      "question": "Great, thank you for checking! One more thing - can I change the shipping address before it ships?",
+      "response": "Since your order hasn't shipped yet, I can help you update the shipping address. Please provide the new address and I'll make the change for you.",
+      "question_raw": "Great, thank you for checking! One more thing - can I change the shipping address before it ships?",
+      "response_raw": "Since your order hasn't shipped yet, I can help you update the shipping address. Please provide the new address and I'll make the change for you."
+    },
+    {
+      "turn_id": "turn_004",
+      "turn_rank": 4,
+      "question": "Perfect, please change it to 123 Main Street, Seattle, WA 98101",
+      "response": "Done! I've updated your shipping address. Your order will be delivered to the new address. Is there anything else I can help you with?",
+      "question_raw": "Perfect, please change it to 123 Main Street, Seattle, WA 98101",
+      "response_raw": "Done! I've updated your shipping address. Your order will be delivered to the new address. Is there anything else I can help you with?"
+    },
+    {
+      "turn_id": "turn_005",
+      "turn_rank": 5,
+      "question": "No, that's all. Thanks!",
+      "response": "You're welcome! Have a great day. Feel free to reach out if you need anything else.",
+      "question_raw": "No, that's all. Thanks!",
+      "response_raw": "You're welcome! Have a great day. Feel free to reach out if you need anything else."
+    }
+  ]
+}

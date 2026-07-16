@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and config
+.env
+*.pem
+*.key
+config.json
+credentials.json
+
+# Data files (don't commit data)
+*.parquet
+*.csv
+*.xlsx
+*.db
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/

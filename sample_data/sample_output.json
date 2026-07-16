@@ -1,0 +1,13 @@
+{
+  "chat_id": "chat_abc123def456",
+  "chat_date": "2026-01-15",
+  "summary": "The user inquired about a delayed order still showing as processing. The bot confirmed the order was in fulfillment and would ship within 24 hours. The user then asked to change the shipping address, which the bot successfully updated before shipment. The chat concluded positively with the user satisfied.",
+  "chat_sentiment": "Positive",
+  "keywords": "order status, fulfillment, shipping address, address change, order tracking",
+  "is_in_scope": "Y",
+  "acronym_count": 0,
+  "acronyms_found": "",
+  "user_language": "English",
+  "total_turns": 5,
+  "summarized_at": "2026-01-15T14:30:22.123456+00:00"
+}
