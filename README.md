@@ -39,36 +39,76 @@ The pipeline handles PII sanitization, language detection, content filtering, an
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        SUMMARIZATION PIPELINE                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌──────────┐     ┌──────────────────┐     ┌──────────┐     ┌───────┐ │
-│  │          │     │                  │     │          │     │       │ │
-│  │  S3      │────▶│  SageMaker       │────▶│  S3      │────▶│Redshift│ │
-│  │ (Input)  │     │  Notebook        │     │ (Output) │     │       │ │
-│  │          │     │                  │     │          │     │       │ │
-│  └──────────┘     └────────┬─────────┘     └──────────┘     └───────┘ │
-│                            │                                           │
-│   Parquet files            │  Processing:                              │
-│   (raw turns)              │  • Group by chat                          │
-│                            │  • Detect language                        │
-│                            │  • Find acronyms                          │
-│                            │  • Sanitize PII                           │
-│                            ▼                                           │
-│                   ┌──────────────────┐                                 │
-│                   │                  │                                 │
-│                   │  Amazon Bedrock  │                                 │
-│                   │  (Nova Micro)    │                                 │
-│                   │                  │                                 │
-│                   │  • Summarize     │                                 │
-│                   │  • Sentiment     │                                 │
-│                   │  • Keywords      │                                 │
-│                   │                  │                                 │
-│                   └──────────────────┘                                 │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                          END-TO-END PIPELINE WITH MONITORING                         │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  ┌──────────┐    ┌──────────┐    ┌────────────┐    ┌──────────┐    ┌───────────┐  │
+│  │ Source   │───▶│ S3       │───▶│ EventBridge│───▶│  Lambda  │───▶│ SageMaker │  │
+│  │Transformed───▶│ (Input)  │    │ Rule       │    │ Trigger  │    │ (Bedrock) │  │
+│  │ Data     │    │          │    │            │    │          │    │           │  │
+│  └──────────┘    └──────────┘    └────────────┘    └──────────┘    └─────┬─────┘  │
+│  Chat Export Job                                                         │         │
+│                                                                          │         │
+│  ┌──────────┐    ┌──────────┐    ┌────────────┐    ┌──────────┐         │         │
+│  │ Source   │───▶│ S3       │───▶│ EventBridge│───▶│  Lambda  │─────────┘         │
+│  │Transformed    │ (Input)  │    │ Rule       │    │ Trigger  │                   │
+│  │ Data     │    │          │    │            │    │          │                   │
+│  └──────────┘    └──────────┘    └────────────┘    └──────────┘                   │
+│  Weekly Data Quality Job                                                           │
+│                                                                                     │
+│                                          │                                          │
+│                              ┌───────────┴───────────┐                             │
+│                              │                       │                              │
+│                          SUCCESS                   ERROR                            │
+│                              │                       │                              │
+│                              ▼                       ▼                              │
+│                     ┌──────────────┐        ┌────────────────┐                     │
+│                     │  S3 (Output) │        │ EventBridge    │                     │
+│                     │  (Parquet)   │        │ Error Rule     │                     │
+│                     └──────┬───────┘        └───────┬────────┘                     │
+│                            │                        │                              │
+│                            ▼                        ▼                              │
+│                     ┌──────────────┐        ┌────────────────┐                     │
+│                     │  Redshift    │        │ Lambda         │                     │
+│                     │  (chat_      │        │ (Error Handler)│                     │
+│                     │   summary    │        └───────┬────────┘                     │
+│                     │   dataset)   │                │                              │
+│                     └──────────────┘                │                              │
+│                                            ┌────────┴────────┐                     │
+│                                            │                 │                     │
+│                                            ▼                 ▼                     │
+│                                    ┌──────────────┐  ┌──────────────┐             │
+│                                    │ SNS          │  │ CloudWatch   │             │
+│                                    │ (Email Alert)│  │ Alarm        │             │
+│                                    └──────┬───────┘  └──────┬───────┘             │
+│                                           │                 │                     │
+│                                           ▼                 ▼                     │
+│                                    ┌──────────────┐  ┌──────────────┐             │
+│                                    │  Email to    │  │  Ticket to   │             │
+│                                    │  Team        │  │  On-Call      │             │
+│                                    └──────────────┘  └──────────────┘             │
+│                                                                                     │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Pipeline Flow
+
+1. **Ingestion**: Source transformed data is exported as Parquet to S3 (Chat Export Job)
+2. **Trigger**: EventBridge rule detects new files → invokes Lambda
+3. **Processing**: Lambda starts SageMaker job (Bedrock summarization)
+4. **Output**: Results written to S3 (Parquet) → loaded into Redshift (chat_summary dataset)
+5. **Data Quality**: Weekly Data Quality Job validates output and triggers re-processing if needed
+6. **Monitoring**: On failure, EventBridge error rule triggers alerting Lambda
+
+### Alerting & Monitoring
+
+| Event | Action | Target |
+|-------|--------|--------|
+| Pipeline failure | SNS notification | Email to team |
+| Pipeline failure | CloudWatch Alarm | Auto-creates ticket for on-call |
+| SageMaker timeout | EventBridge error rule | Lambda error handler |
+| Data quality check fails | SNS + CloudWatch | Email + ticket |
 
 ### Request Flow
 
@@ -128,29 +168,37 @@ The pipeline handles PII sanitization, language detection, content filtering, an
 ### Deployment Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         AWS Account                          │
-│                                                             │
-│  ┌───────────────┐         ┌──────────────────────────┐    │
-│  │  SageMaker    │         │  Amazon Bedrock          │    │
-│  │  Notebook     │────────▶│                          │    │
-│  │  Instance     │         │  us-east-1: Nova Micro   │    │
-│  │  (ml.m5.xl)  │    ┌───▶│  us-west-2: Nova Micro   │    │
-│  └───────┬───────┘    │    └──────────────────────────┘    │
-│          │            │                                     │
-│          │    100 parallel                                  │
-│          │    workers (round-robin)                         │
-│          │                                                  │
-│          ▼                                                  │
-│  ┌───────────────┐         ┌──────────────────────────┐    │
-│  │  Amazon S3    │         │  Amazon Redshift         │    │
-│  │               │         │                          │    │
-│  │  /input/      │         │  chat_summary            │    │
-│  │  /output/     │────────▶│  (staging + merge)       │    │
-│  │  /config/     │  COPY   │                          │    │
-│  └───────────────┘         └──────────────────────────┘    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              AWS Account                                 │
+│                                                                         │
+│  ┌───────────────┐         ┌──────────────────────────┐                │
+│  │  SageMaker    │         │  Amazon Bedrock          │                │
+│  │  Processing   │────────▶│                          │                │
+│  │  Job          │         │  us-east-1: Nova Micro   │                │
+│  │               │    ┌───▶│  us-west-2: Nova Micro   │                │
+│  └───────┬───────┘    │    └──────────────────────────┘                │
+│          │            │                                                 │
+│          │    100 parallel workers                                      │
+│          │    (round-robin across regions)                              │
+│          │                                                              │
+│          ▼                                                              │
+│  ┌───────────────┐         ┌──────────────────────────┐                │
+│  │  Amazon S3    │         │  Amazon Redshift         │                │
+│  │               │         │                          │                │
+│  │  /input/      │         │  chat_summary            │                │
+│  │  /output/     │────────▶│  (staging + merge)       │                │
+│  │  /config/     │  COPY   │                          │                │
+│  └───────────────┘         └──────────────────────────┘                │
+│                                                                         │
+│  ┌─────────────────────── MONITORING ──────────────────────────────┐   │
+│  │                                                                  │   │
+│  │  EventBridge ──▶ Lambda (error handler) ──▶ SNS (email)         │   │
+│  │                                          ──▶ CloudWatch Alarm   │   │
+│  │                                               ──▶ Ticket (oncall)│   │
+│  │                                                                  │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
