@@ -1,20 +1,25 @@
-# GenAI Chat Summarizer
+# Conversation Intelligence Framework
 
-A scalable chat summarization pipeline that converts lengthy chatbot interactions into concise summaries using Large Language Models. Built on AWS with Amazon Bedrock for inference and SageMaker for orchestration.
+A production-grade AI framework that transforms raw enterprise chatbot conversations into structured business intelligence using LLM-powered summarization, sentiment analysis, multilingual detection, keyword extraction, domain-specific enrichment, and scalable cloud-native orchestration on AWS.
 
 ---
 
 ## Overview
 
-Customer support chatbots generate thousands of multi-turn chats daily. Manually reviewing them for insights — trends, sentiment, resolution quality — doesn't scale.
+Enterprise conversational assistants generate millions of multi-turn interactions every month. While these conversations contain valuable operational and product insights, they are typically stored only as raw transcripts, making large-scale analysis difficult.
 
-This project solves that by:
-1. Reading raw chat data from S3 (Parquet format)
-2. Grouping individual turns into complete chats
-3. Calling Amazon Bedrock (Nova Micro) to generate structured summaries
-4. Writing results back to S3 and loading them into Redshift for analytics
+The Conversation Intelligence Framework automatically converts unstructured conversations into structured analytics by enriching each interaction with:
 
-The pipeline handles PII sanitization, language detection, content filtering, and parallel processing out of the box.
+- AI-generated conversation summaries
+- User sentiment classification
+- Language detection
+- Keyword extraction
+- Domain-specific acronym identification
+- Out-of-scope interaction detection
+- Automated data quality validation
+- Cloud-native orchestration and scalable processing
+
+The enriched output is delivered into Amazon Redshift, enabling downstream analytics, operational reporting, and product intelligence without manual transcript review.
 
 ---
 
